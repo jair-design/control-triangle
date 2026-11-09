@@ -1,0 +1,6 @@
+{
+  "CT-M04-G01-I01-PA": "la IA retoma el documento de solución y lo mantiene como contexto de trabajo para continuar el desarrollo.",
+  "CT-M04-G01-I01-PB": "la IA extrae y resume el contexto del Slice 03 (lo que la solución dice sobre el tablero, las tarjetas, el CRUD, la persistencia en MongoDB y la validación de token, y lo que queda fuera de su alcance), enfocando el contexto en ese slice.",
+  "CT-M04-G01-I02-PA": "la IA implementa el tablero visual: un **store del tablero** (`BoardStore`, colgado del RootStore) con el modelo de tarea (título, descripción, fecha, persona asignada como texto abierto, estado) y datos de prueba por defecto; los **colores diferenciales por estado** añadidos al tema; y los componentes de UI —tablero, columna y tarjeta— que muestran las tres columnas (To Do, En progreso, Completado) con su **conteo** de tarjetas, un color por columna, y **scroll propio** por columna para aprovechar el alto disponible. Las tarjetas siguen el tema establecido. El tablero se monta en la página principal tras el login. Compila y arranca sin errores; la comprobación visual se hace en el navegador.",
+  "CT-M04-G01-I02-PC": "la IA agrega alrededor de 15 tarjetas de prueba a la columna To Do en el store del tablero (conservando las de las demás columnas), suficientes para que su lista desborde y se active el scroll interno de esa columna."
+}

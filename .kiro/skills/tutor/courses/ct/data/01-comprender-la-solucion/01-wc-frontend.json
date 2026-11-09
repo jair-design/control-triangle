@@ -1,0 +1,14 @@
+{
+  "CT-M01-G01-I01-PA": "Se transmite la idea nuclear del SPA: una sola página que actualiza su contenido dinámicamente (sin recargar toda la página), lo que da una experiencia fluida tipo app.",
+  "CT-M01-G01-I02-PA": "Se transmite la idea nuclear de React: una librería de JavaScript para construir interfaces con componentes reutilizables, que actualiza la vista automáticamente cuando cambian los datos.",
+  "CT-M01-G01-I02-PB": "Se muestra un ejemplo mínimo de un componente de React (un fragmento de código simple) que ilustra cómo se ve y se reutiliza.",
+  "CT-M01-G01-I03-PA": "Se transmite la idea nuclear de CORS: un mecanismo de seguridad del navegador que bloquea por defecto las peticiones entre orígenes distintos y define cómo el servidor autoriza los que sí pueden acceder.",
+  "CT-M01-G01-I04-PA": "Se transmite la idea nuclear de Vite: una herramienta de frontend que sirve la app en desarrollo con recarga casi instantánea y empaqueta (build) el código para producción.",
+  "CT-M01-G01-I04-PB": "Se transmite cómo reconocer Vite en un proyecto (archivo `vite.config` y su presencia en `package.json`/scripts) y que la configuración vive en ese `vite.config`.",
+  "CT-M01-G01-I04-PC": "Se transmite qué es un proxy (un intermediario que reenvía peticiones entre dos partes) y qué es el proxy de Vite (reenvía ciertas peticiones del frontend al backend, evitando CORS).",
+  "CT-M01-G01-I05-PA": "Se transmite la idea nuclear de localStorage: un almacenamiento clave-valor del navegador que persiste datos en el equipo del usuario entre recargas y cierres, hasta que se borran.",
+  "CT-M01-G01-I06-PA": "Se transmite qué es el **estado** (los datos que la interfaz refleja en un momento dado) y qué es un **store** (el lugar centralizado del frontend donde ese estado se guarda y administra).",
+  "CT-M01-G01-I06-PB": "Se transmite la idea nuclear de MobX: una librería de gestión de estado que actualiza automáticamente la interfaz cuando cambian los datos que observa.",
+  "CT-M01-G01-I06-PC": "Se muestra un ejemplo mínimo de MobX (estado observable + algo que reacciona a su cambio) que ilustra cómo funciona.",
+  "CT-M01-G01-I07-PA": "Se transmite la idea nuclear de TypeScript: un superconjunto de JavaScript que añade tipos, lo que permite detectar errores antes de ejecutar el código."
+}

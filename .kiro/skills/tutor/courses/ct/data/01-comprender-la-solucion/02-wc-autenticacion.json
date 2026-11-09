@@ -1,0 +1,12 @@
+{
+  "CT-M01-G02-I01-PA": "Se transmite la idea nuclear de OAuth2: un estándar de autorización que permite conceder acceso a recursos sin compartir la contraseña, mediante tokens.",
+  "CT-M01-G02-I02-PA": "Se transmite que OpenID Connect es una capa sobre OAuth2 que añade **identidad** (saber quién es el usuario), mientras OAuth2 por sí solo se ocupa de autorización.",
+  "CT-M01-G02-I03-PA": "Se transmite la idea nuclear del flujo Authorization Code: tras el login, el proveedor entrega un código temporal que la aplicación intercambia por los tokens, en lugar de exponerlos directamente.",
+  "CT-M01-G02-I04-PA": "Se transmite la idea nuclear de los scopes: etiquetas que definen qué información y qué permisos solicita y obtiene la aplicación al autenticar.",
+  "CT-M01-G02-I05-PA": "Se transmite que son las direcciones a las que el proveedor redirige de vuelta a la aplicación tras el login (callback) y tras el logout (logout URL).",
+  "CT-M01-G02-I06-PA": "Se transmite la idea nuclear de PKCE: una extensión del flujo de autorización que protege el intercambio de código en clientes que no pueden guardar un secreto (como una SPA).",
+  "CT-M01-G02-I06-PB": "Se transmite que el `code_verifier` es un secreto aleatorio que genera la app y el `code_challenge` es su derivado (hash) enviado al inicio; al final se comprueba uno contra otro para asegurar que quien pide los tokens es quien inició el flujo.",
+  "CT-M01-G02-I07-PA": "Se transmite la diferencia nuclear: el **ID token** identifica quién es el usuario (autenticación), y el **access token** autoriza el acceso a recursos protegidos (autorización de llamadas a una API).",
+  "CT-M01-G02-I08-PA": "Se transmite la idea nuclear del refresh token: un token de larga vida que sirve para obtener nuevos access tokens cuando el actual vence, sin repetir el login.",
+  "CT-M01-G02-I08-PB": "Se transmite cómo se usa: cuando el access token vence, la app envía el refresh token al proveedor y recibe tokens nuevos, de forma transparente para el usuario."
+}

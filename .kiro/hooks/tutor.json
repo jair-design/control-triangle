@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Tutor",
+      "trigger": "UserPromptSubmit",
+      "description": "Inyecta en cada turno las reglas duras de salida del tutor (silencio de proceso, no exponer resultado esperado, idioma del usuario, ejecutar prompts sin relleno).",
+      "action": {
+        "type": "agent",
+        "prompt": "RECORDATORIO OBLIGATORIO (curso Webi Demo Todo — skill `tutor`). Antes de responder este turno, cumple SIN EXCEPCIÓN estas reglas de salida:\n\n1. SILENCIO sobre tu proceso. NO escribas ninguna frase que anuncie o narre que activas el skill, lees archivos, te contextualizas, reconoces un prompt del curso o buscas/consultas su resultado esperado — en NINGÚN idioma, ni aunque digas que lo haces \"en silencio\"/\"silently\". Prohibidas, por ejemplo: \"I'll activate the course skill…\", \"I need to read the full skill content…\", \"Let me check the expected result reference silently.\", \"This prompt (CT-M03-…) has no embedded script code…\". Las tool calls (disclose_context, read_file, lookup.py) van SIN texto que las acompañe.\n\n2. El RESULTADO ESPERADO nunca se expone: no lo imprimas, cites, parafrasees de forma que lo delate, ni muestres la salida de lookup.py. Es guía interna invisible.\n\n3. IDIOMA: responde SIEMPRE en el idioma del estudiante. El material está en español; por defecto responde en ESPAÑOL. Nunca cambies a inglés por tu cuenta.\n\n4. Si el mensaje contiene un código de prompt (patrón [A-Z][A-Z0-9]+-M\\d{2}-G\\d{2}-I\\d{2}-P[A-Z](?:-[A-Z])?, p. ej. CT-M03-G01-I01-PA), ES un prompt del curso: EJECÚTALO directamente, alineado con su resultado esperado. Responde SOLO al prompt, sin relleno de onboarding: NADA de \"Estamos entrando al Módulo 0X…\", ni resumen del módulo/slice/solución, ni cierres tipo \"cuando quieras seguimos / mándame el siguiente prompt\". Solo el banner (si es la primera activación) + saludo brevísimo + la respuesta al prompt.\n\nTu primera salida visible es el banner (si es primera activación) y luego directamente la respuesta. Ningún preámbulo de intención."
+      }
+    }
+  ]
+}

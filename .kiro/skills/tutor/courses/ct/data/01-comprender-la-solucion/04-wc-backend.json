@@ -1,0 +1,9 @@
+{
+  "CT-M01-G04-I01-PA": "Se transmite la idea nuclear de un microservicio: un servicio pequeño e independiente que se ocupa de una parte acotada del sistema y se comunica con los demás por la red.",
+  "CT-M01-G04-I02-PA": "Se transmite la idea nuclear de un endpoint: una dirección (URL) del servicio que expone una operación concreta que un cliente puede invocar.",
+  "CT-M01-G04-I03-PA": "Se transmite que CRUD son las cuatro operaciones básicas sobre datos: crear, leer, actualizar y eliminar (Create, Read, Update, Delete).",
+  "CT-M01-G04-I04-PA": "Se transmite la idea nuclear del modelo de persistencia: la forma en que se estructuran los datos para guardarlos y recuperarlos de un almacenamiento duradero.",
+  "CT-M01-G04-I05-PA": "Se transmite la idea nuclear de MongoDB: una base de datos NoSQL orientada a documentos (tipo JSON), sin esquema rígido de tablas.",
+  "CT-M01-G04-I05-PB": "Se transmite la diferencia nuclear (documentos flexibles vs tablas con esquema y relaciones) y un criterio simple de cuándo conviene cada una según la estructura y las relaciones de los datos.",
+  "CT-M01-G04-I06-PA": "Se transmite la idea nuclear de Express: un framework minimalista de Node.js para construir servidores y APIs, definiendo rutas que responden a las peticiones."
+}

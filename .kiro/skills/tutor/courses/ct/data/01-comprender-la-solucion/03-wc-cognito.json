@@ -1,0 +1,10 @@
+{
+  "CT-M01-G03-I01-PA": "Se transmite la idea nuclear de Amazon Cognito: un servicio de AWS que gestiona identidad y autenticación de usuarios (registro, login, tokens) para aplicaciones.",
+  "CT-M01-G03-I02-PA": "Se transmite la idea nuclear del User Pool: el directorio de usuarios de Cognito, donde viven las cuentas y su configuración de autenticación.",
+  "CT-M01-G03-I03-PA": "Se transmite la idea nuclear del App client: la representación de una aplicación registrada ante Cognito, con la configuración con que esa app se autentica.",
+  "CT-M01-G03-I03-PB": "Se transmite que un cliente público es el que no puede guardar un secreto de forma segura (como una SPA en el navegador), por lo que se autentica sin secreto de cliente.",
+  "CT-M01-G03-I04-PA": "Se transmite la idea nuclear de la Hosted UI: la pantalla de login que Cognito provee y aloja, lista para usar, sin que la app construya su propio formulario.",
+  "CT-M01-G03-I05-PA": "Se transmite la idea nuclear de un IdP: el sistema responsable de autenticar a los usuarios y afirmar su identidad ante las aplicaciones que confían en él.",
+  "CT-M01-G03-I05-PB": "Se transmite que en esta solución el propio Cognito actúa como IdP (los usuarios viven en su User Pool), sin depender de un proveedor de identidad externo.",
+  "CT-M01-G03-I06-PA": "Se transmite la idea nuclear del endpoint de logout de Cognito: una URL del proveedor que cierra la sesión en Cognito, de modo que el siguiente acceso obligue a autenticarse de nuevo."
+}
