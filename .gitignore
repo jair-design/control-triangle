@@ -1,5 +1,5 @@
-# La carpeta app/ es efímera: es donde el operador genera el código durante el
-# curso. No forma parte del material versionado del repositorio.
+# El código de la aplicación (app/frontend, app/backend) se versiona.
+# Solo se ignoran los secretos y las dependencias.
 .env
-app/frontend
-app/backend
+node_modules
+dist
