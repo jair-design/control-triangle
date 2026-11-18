@@ -50,6 +50,7 @@ const Header = observer(function Header() {
           )}
           <button
             type="button"
+            onClick={() => session.clear()}
             className="rounded-lg border border-ink-700 px-3 py-1.5 text-sm text-white transition-colors hover:bg-ink-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
           >
             Cerrar sesión

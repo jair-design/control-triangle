@@ -130,12 +130,15 @@ export class SessionStore {
     this.refreshPromise = refreshTokens(current.refreshToken)
       .then((tokens) => {
         runInAction(() => {
+          // Si la sesión terminó mientras se renovaba (logout), no se reactiva.
+          if (this.tokens !== current) return
           this.setTokens(tokens)
           this.restoring = false
         })
       })
       .catch(() => {
         runInAction(() => {
+          if (this.tokens !== current) return
           this.clear()
           this.sessionExpired = true
         })
