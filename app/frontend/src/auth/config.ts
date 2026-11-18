@@ -15,3 +15,21 @@ export const cognitoConfig = {
   redirectUri: `${window.location.origin}${CALLBACK_PATH}`,
   scopes: 'openid email profile',
 }
+
+const DEFAULT_REFRESH_MARGIN_MINUTES = 5
+const MS_PER_MINUTE = 60_000
+
+function readMinutes(raw: string | undefined, fallback: number): number {
+  if (raw === undefined || raw.trim() === '') return fallback
+  const minutes = Number(raw)
+  return Number.isFinite(minutes) && minutes >= 0 ? minutes : fallback
+}
+
+export const sessionConfig = {
+  // Cuánto antes de que venza el access token se renueva la sesión.
+  refreshMarginMs:
+    readMinutes(
+      import.meta.env.VITE_TOKEN_REFRESH_MARGIN_MINUTES,
+      DEFAULT_REFRESH_MARGIN_MINUTES,
+    ) * MS_PER_MINUTE,
+}

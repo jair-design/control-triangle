@@ -6,6 +6,8 @@ import { AppShell } from './components/AppShell'
 import { LoginScreen } from './components/LoginScreen'
 import { useRootStore } from './stores/useRootStore'
 
+const SESSION_EXPIRED_MESSAGE = 'Tu sesión expiró. Inicia sesión de nuevo.'
+
 type CallbackParams = { code: string; state: string } | { error: string } | null
 
 // Enrutamiento simple: la única ruta especial es el callback de Cognito.
@@ -46,6 +48,15 @@ const App = observer(function App() {
       .finally(() => setExchanging(false))
   }, [callback, session])
 
+  useEffect(() => {
+    session.start()
+    return () => session.stop()
+  }, [session])
+
+  if (session.restoring) {
+    return <LoginScreen error={null} exchanging />
+  }
+
   if (session.isAuthenticated) {
     return (
       <AppShell>
@@ -59,7 +70,10 @@ const App = observer(function App() {
     )
   }
 
-  return <LoginScreen error={error} exchanging={exchanging} />
+  return <LoginScreen
+      error={error ?? (session.sessionExpired ? SESSION_EXPIRED_MESSAGE : null)}
+      exchanging={exchanging}
+    />
 })
 
 export default App

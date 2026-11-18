@@ -81,3 +81,35 @@ async function requestTokens(code: string, state: string): Promise<Tokens> {
     refreshToken: body.refresh_token,
   }
 }
+
+/**
+ * Renueva el id_token y el access_token con el refresh token.
+ * Cognito no devuelve un refresh token nuevo: se conserva el actual.
+ */
+export async function refreshTokens(refreshToken: string): Promise<Tokens> {
+  const response = await fetch(`${cognitoConfig.domain}/oauth2/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: cognitoConfig.clientId,
+      refresh_token: refreshToken,
+    }),
+  })
+
+  const body = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    throw new Error(
+      `No se pudo renovar la sesión (${body.error ?? response.status}).`,
+    )
+  }
+  if (typeof body.id_token !== 'string' || typeof body.access_token !== 'string') {
+    throw new Error('La respuesta de renovación no trae los tokens esperados.')
+  }
+
+  return {
+    idToken: body.id_token,
+    accessToken: body.access_token,
+    refreshToken,
+  }
+}
