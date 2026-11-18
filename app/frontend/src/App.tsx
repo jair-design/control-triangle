@@ -1,11 +1,13 @@
 import { observer } from 'mobx-react-lite'
 import { useEffect, useState } from 'react'
 import { exchangeCode } from './auth/cognito'
-import { CALLBACK_PATH } from './auth/config'
+import { CALLBACK_PATH, LOGOUT_PATH } from './auth/config'
 import { AppShell } from './components/AppShell'
 import { LoginScreen } from './components/LoginScreen'
 import { useRootStore } from './stores/useRootStore'
 
+const BUSY_LOGIN_MESSAGE = 'Iniciando sesión…'
+const BUSY_LOGOUT_MESSAGE = 'Cerrando sesión…'
 const SESSION_EXPIRED_MESSAGE = 'Tu sesión expiró. Inicia sesión de nuevo.'
 
 type CallbackParams = { code: string; state: string } | { error: string } | null
@@ -48,13 +50,34 @@ const App = observer(function App() {
       .finally(() => setExchanging(false))
   }, [callback, session])
 
+  // Cognito devuelve aquí al usuario tras cerrar su sesión: no debe quedar ninguna sesión local.
+  const [onLogoutRoute, setOnLogoutRoute] = useState(
+    () => window.location.pathname === LOGOUT_PATH,
+  )
+
+  // Va antes que el efecto de start(): así una sesión rehidratada no llega a validarse.
+  useEffect(() => {
+    if (!onLogoutRoute) return
+    session.clear()
+    window.history.replaceState(null, '', '/')
+    setOnLogoutRoute(false)
+  }, [onLogoutRoute, session])
+
   useEffect(() => {
     session.start()
     return () => session.stop()
   }, [session])
 
+  if (onLogoutRoute) {
+    return <LoginScreen error={null} busyMessage={null} />
+  }
+
+  if (session.signingOut) {
+    return <LoginScreen error={null} busyMessage={BUSY_LOGOUT_MESSAGE} />
+  }
+
   if (session.restoring) {
-    return <LoginScreen error={null} exchanging />
+    return <LoginScreen error={null} busyMessage={BUSY_LOGIN_MESSAGE} />
   }
 
   if (session.isAuthenticated) {
@@ -72,7 +95,7 @@ const App = observer(function App() {
 
   return <LoginScreen
       error={error ?? (session.sessionExpired ? SESSION_EXPIRED_MESSAGE : null)}
-      exchanging={exchanging}
+      busyMessage={exchanging ? BUSY_LOGIN_MESSAGE : null}
     />
 })
 

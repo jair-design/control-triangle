@@ -24,3 +24,11 @@ export function getTokenExpiryMs(token: string): number | null {
   const exp = decodeJwtClaims(token)?.exp
   return typeof exp === 'number' ? exp * 1000 : null
 }
+
+/** Texto legible de la expiración de un token, para las trazas (p. ej. "vence en 42 min"). */
+export function describeTokenExpiry(token: string): string {
+  const expiry = getTokenExpiryMs(token)
+  if (expiry === null) return 'con expiración ilegible'
+  const minutes = Math.round((expiry - Date.now()) / 60_000)
+  return minutes >= 0 ? `vence en ${minutes} min` : `venció hace ${-minutes} min`
+}

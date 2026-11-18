@@ -1,4 +1,5 @@
 import { cognitoConfig } from './config'
+import { authLog } from './log'
 import { createCodeChallenge, generateRandomString } from './pkce'
 
 const VERIFIER_KEY = 'webi-todo.pkce_verifier'
@@ -112,4 +113,66 @@ export async function refreshTokens(refreshToken: string): Promise<Tokens> {
     accessToken: body.access_token,
     refreshToken,
   }
+}
+
+export type TokenValidation = 'valid' | 'invalid' | 'unreachable'
+
+/**
+ * Pregunta a Cognito (userInfo) si el access token sigue siendo válido.
+ * 'invalid' = Cognito lo rechaza (revocado, usuario deshabilitado...).
+ * 'unreachable' = no hubo respuesta concluyente (red caída, error del servidor).
+ */
+export async function validateAccessToken(
+  accessToken: string,
+): Promise<TokenValidation> {
+  try {
+    const response = await fetch(`${cognitoConfig.domain}/oauth2/userInfo`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    if (response.ok) return 'valid'
+    if (response.status === 401 || response.status === 403) return 'invalid'
+    return 'unreachable'
+  } catch {
+    return 'unreachable'
+  }
+}
+
+const REVOKE_TIMEOUT_MS = 3000
+
+async function revokeToken(refreshToken: string): Promise<void> {
+  const response = await fetch(`${cognitoConfig.domain}/oauth2/revoke`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      token: refreshToken,
+      client_id: cognitoConfig.clientId,
+    }),
+    signal: AbortSignal.timeout(REVOKE_TIMEOUT_MS),
+  })
+  if (!response.ok) throw new Error(`revoke respondió ${response.status}`)
+}
+
+export function buildLogoutUrl(): string {
+  const params = new URLSearchParams({
+    client_id: cognitoConfig.clientId,
+    logout_uri: cognitoConfig.logoutUri,
+  })
+  return `${cognitoConfig.domain}/logout?${params}`
+}
+
+/**
+ * Cierra la sesión en Cognito: revoca el refresh token (invalida también los
+ * access tokens derivados) y navega al endpoint /logout, que borra la cookie
+ * de la Hosted UI. Si la revocación falla, el cierre continúa igualmente.
+ */
+export async function signOut(refreshToken: string | null): Promise<void> {
+  if (refreshToken) {
+    try {
+      await revokeToken(refreshToken)
+      authLog.info('✅ tokens revocados en Cognito')
+    } catch {
+      authLog.warn('⚠️ no se pudo revocar el token; se continúa con el cierre de sesión')
+    }
+  }
+  window.location.assign(buildLogoutUrl())
 }

@@ -4,10 +4,11 @@ import { Logo } from './Logo'
 
 interface LoginScreenProps {
   error: string | null
-  exchanging: boolean
+  // Si hay mensaje, se muestra en lugar del botón (p. ej. "Iniciando sesión…").
+  busyMessage: string | null
 }
 
-export function LoginScreen({ error, exchanging }: LoginScreenProps) {
+export function LoginScreen({ error, busyMessage }: LoginScreenProps) {
   const [redirecting, setRedirecting] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
 
@@ -32,9 +33,9 @@ export function LoginScreen({ error, exchanging }: LoginScreenProps) {
           Webi <span className="text-brand-600">Todo</span>
         </h1>
 
-        {exchanging ? (
+        {busyMessage ? (
           <p className="mt-8 text-base font-medium text-muted" role="status">
-            Iniciando sesión…
+            {busyMessage}
           </p>
         ) : (
           <>

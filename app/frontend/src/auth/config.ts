@@ -8,11 +8,13 @@ if (!domain || !clientId) {
 }
 
 export const CALLBACK_PATH = '/callback'
+export const LOGOUT_PATH = '/logout'
 
 export const cognitoConfig = {
   domain,
   clientId,
   redirectUri: `${window.location.origin}${CALLBACK_PATH}`,
+  logoutUri: `${window.location.origin}${LOGOUT_PATH}`,
   scopes: 'openid email profile',
 }
 

@@ -1,7 +1,13 @@
 import { makeAutoObservable, runInAction } from 'mobx'
-import { refreshTokens, type Tokens } from '../auth/cognito'
+import {
+  refreshTokens,
+  signOut,
+  validateAccessToken,
+  type Tokens,
+} from '../auth/cognito'
 import { sessionConfig } from '../auth/config'
-import { getTokenExpiryMs } from '../auth/jwt'
+import { describeTokenExpiry, getTokenExpiryMs } from '../auth/jwt'
+import { authLog } from '../auth/log'
 import { readUserProfile, type UserProfile } from '../auth/profile'
 
 const STORAGE_KEY = 'webi-todo.session'
@@ -20,20 +26,27 @@ function isTokens(value: unknown): value is Tokens {
 
 export class SessionStore {
   tokens: Tokens | null = null
-  // true mientras se restaura una sesión cuyo token ya venció (antes de decidir login o shell).
+  // true mientras se valida con Cognito una sesión recuperada de localStorage (antes de decidir login o shell).
   restoring = false
+  // true mientras se cierra la sesión en Cognito (revocación y redirección).
+  signingOut = false
   // true si la sesión se cerró porque falló la renovación.
   sessionExpired = false
 
   private active = false
   private timer: ReturnType<typeof setTimeout> | null = null
   private refreshPromise: Promise<void> | null = null
+  private restorePromise: Promise<void> | null = null
 
   constructor() {
-    makeAutoObservable<SessionStore, 'active' | 'timer' | 'refreshPromise'>(this, {
+    makeAutoObservable<
+      SessionStore,
+      'active' | 'timer' | 'refreshPromise' | 'restorePromise'
+    >(this, {
       active: false,
       timer: false,
       refreshPromise: false,
+      restorePromise: false,
     })
     // Solo lectura: los temporizadores y las peticiones arrancan en start().
     this.restore()
@@ -48,10 +61,10 @@ export class SessionStore {
     return this.tokens ? readUserProfile(this.tokens.idToken) : null
   }
 
-  /** Carga la sesión guardada y marca si hay que renovarla antes de mostrar la app. */
+  /** Carga la sesión guardada. Si existe, queda pendiente de validar con Cognito antes de mostrar la app. */
   restore() {
     this.loadFromStorage()
-    this.restoring = this.tokens !== null && this.msUntilRefresh() <= 0
+    this.restoring = this.tokens !== null
   }
 
   /** Recupera la sesión guardada, si existe y es válida. */
@@ -72,6 +85,8 @@ export class SessionStore {
 
   setTokens(tokens: Tokens) {
     this.tokens = tokens
+    // Tokens recién emitidos por Cognito: no necesitan validarse.
+    this.restoring = false
     this.sessionExpired = false
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tokens))
     this.schedule()
@@ -85,9 +100,27 @@ export class SessionStore {
     localStorage.removeItem(STORAGE_KEY)
   }
 
-  /** Activa el ciclo de renovación. Idempotente: se puede llamar de nuevo sin duplicar nada. */
+  /**
+   * Cierra la sesión: limpia lo local de inmediato, revoca el refresh token en
+   * Cognito y navega a su endpoint /logout para cerrar también su sesión.
+   */
+  logout() {
+    const refreshToken = this.tokens?.refreshToken ?? null
+    this.clear()
+    this.signingOut = true
+    void signOut(refreshToken)
+  }
+
+  /**
+   * Activa el ciclo de la sesión. Si hay una sesión recuperada de localStorage,
+   * primero la valida contra Cognito. Idempotente: se puede llamar de nuevo sin duplicar nada.
+   */
   start() {
     this.active = true
+    if (this.restoring) {
+      void this.validateOnLoad()
+      return
+    }
     this.schedule()
   }
 
@@ -102,6 +135,53 @@ export class SessionStore {
     const expiry = getTokenExpiryMs(this.tokens.accessToken)
     if (expiry === null) return 0
     return expiry - sessionConfig.refreshMarginMs - Date.now()
+  }
+
+  private validateOnLoad(): Promise<void> {
+    if (this.restorePromise) return this.restorePromise
+    const current = this.tokens
+    if (!current) {
+      this.restoring = false
+      return Promise.resolve()
+    }
+    this.restorePromise = this.runValidation(current).finally(() => {
+      this.restorePromise = null
+    })
+    return this.restorePromise
+  }
+
+  private async runValidation(current: Tokens) {
+    const expiry = describeTokenExpiry(current.accessToken)
+
+    // Vencido o dentro del margen: la renovación ya valida el refresh token contra Cognito.
+    if (this.msUntilRefresh() <= 0) {
+      authLog.info(`access token ${expiry}: se renueva con el refresh token (sin consultar userInfo)`)
+      await this.refresh()
+      return
+    }
+
+    authLog.info(`validando el access token contra Cognito (userInfo)… ${expiry}`)
+    const result = await validateAccessToken(current.accessToken)
+
+    if (this.tokens !== current) {
+      authLog.info('la sesión cambió mientras se validaba; se ignora el resultado')
+      return
+    }
+
+    if (result === 'valid') {
+      authLog.info('✅ validación exitosa: Cognito confirma que el token es válido (userInfo 200)')
+    } else if (result === 'unreachable') {
+      authLog.warn('⚠️ no se pudo validar (sin respuesta concluyente de Cognito); se mantiene la sesión')
+    } else {
+      authLog.warn('❌ validación fallida: Cognito rechaza el token (userInfo 401); se intenta renovar')
+      await this.refresh()
+      return
+    }
+
+    runInAction(() => {
+      this.restoring = false
+      this.schedule()
+    })
   }
 
   private cancelTimer() {
@@ -133,12 +213,16 @@ export class SessionStore {
           // Si la sesión terminó mientras se renovaba (logout), no se reactiva.
           if (this.tokens !== current) return
           this.setTokens(tokens)
-          this.restoring = false
+          authLog.info('✅ sesión renovada con el refresh token')
         })
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         runInAction(() => {
           if (this.tokens !== current) return
+          authLog.warn(
+            '❌ no se pudo renovar la sesión; se cierra:',
+            error instanceof Error ? error.message : error,
+          )
           this.clear()
           this.sessionExpired = true
         })
