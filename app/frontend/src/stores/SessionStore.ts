@@ -2,6 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx'
 import { refreshTokens, type Tokens } from '../auth/cognito'
 import { sessionConfig } from '../auth/config'
 import { getTokenExpiryMs } from '../auth/jwt'
+import { readUserProfile, type UserProfile } from '../auth/profile'
 
 const STORAGE_KEY = 'webi-todo.session'
 // setTimeout no admite más de ~24,8 días; al disparar se vuelve a evaluar.
@@ -35,12 +36,22 @@ export class SessionStore {
       refreshPromise: false,
     })
     // Solo lectura: los temporizadores y las peticiones arrancan en start().
-    this.loadFromStorage()
-    this.restoring = this.tokens !== null && this.msUntilRefresh() <= 0
+    this.restore()
   }
 
   get isAuthenticated(): boolean {
     return this.tokens !== null
+  }
+
+  /** Datos del usuario leídos del ID token (nombre, email y avatar si existen). */
+  get user(): UserProfile | null {
+    return this.tokens ? readUserProfile(this.tokens.idToken) : null
+  }
+
+  /** Carga la sesión guardada y marca si hay que renovarla antes de mostrar la app. */
+  restore() {
+    this.loadFromStorage()
+    this.restoring = this.tokens !== null && this.msUntilRefresh() <= 0
   }
 
   /** Recupera la sesión guardada, si existe y es válida. */
