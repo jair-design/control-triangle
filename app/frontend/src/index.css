@@ -23,6 +23,21 @@
   --color-line: #dbe2ec;
   --color-muted: #5b6b82;
 
+  /* Estados del tablero: cada columna tiene su color. 'done' reutiliza la marca. */
+  --color-status-todo-50: #eef3fb;
+  --color-status-todo-500: #4f7cc2;
+  --color-status-todo-700: #24406b;
+  --color-status-progress-50: #fffbeb;
+  --color-status-progress-500: #f59e0b;
+  --color-status-progress-700: #b45309;
+  --color-status-done-50: var(--color-brand-50);
+  --color-status-done-500: var(--color-brand-500);
+  --color-status-done-700: var(--color-brand-700);
+
+  /* Sombra suave para las tarjetas */
+  --shadow-card:
+    0 1px 2px rgb(15 32 56 / 0.06), 0 4px 12px rgb(15 32 56 / 0.06);
+
   --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
 }
 

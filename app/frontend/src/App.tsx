@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { exchangeCode } from './auth/cognito'
 import { CALLBACK_PATH, LOGOUT_PATH } from './auth/config'
 import { AppShell } from './components/AppShell'
+import Board from './components/board/Board'
 import { LoginScreen } from './components/LoginScreen'
 import { useRootStore } from './stores/useRootStore'
 
@@ -83,12 +84,7 @@ const App = observer(function App() {
   if (session.isAuthenticated) {
     return (
       <AppShell>
-        <div className="grid h-full min-h-96 place-items-center rounded-xl border border-dashed border-line bg-surface text-center">
-          <div>
-            <p className="text-base font-medium text-muted">Área de contenido</p>
-            <p className="text-sm text-muted/80">Aquí irá el tablero</p>
-          </div>
-        </div>
+        <Board />
       </AppShell>
     )
   }
