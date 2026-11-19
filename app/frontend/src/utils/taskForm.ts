@@ -3,23 +3,33 @@ import {
   TASK_FORM_LIMITS,
   TASK_FORM_TEXT,
 } from '../constants'
-import type { NewTaskInput, TaskStatus } from '../types/board'
+import type { NewTaskInput, Task, TaskStatus } from '../types/board'
 
 export interface TaskFormValues {
   title: string
   description: string
   assignee: string
   dueDate: string
+  status: TaskStatus
 }
 
 export type TaskFormField = keyof TaskFormValues
 export type TaskFormErrors = Partial<Record<TaskFormField, string>>
 
-export const EMPTY_TASK_FORM: TaskFormValues = {
-  title: '',
-  description: '',
-  assignee: '',
-  dueDate: '',
+/** Formulario vacío para crear una tarea en la columna indicada. */
+export function emptyTaskForm(status: TaskStatus): TaskFormValues {
+  return { title: '', description: '', assignee: '', dueDate: '', status }
+}
+
+/** Formulario con los datos actuales de la tarea, para editarla. */
+export function taskToFormValues(task: Task): TaskFormValues {
+  return {
+    title: task.title,
+    description: task.description,
+    assignee: task.assignee ?? '',
+    dueDate: task.dueDate ?? '',
+    status: task.status,
+  }
 }
 
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/
@@ -69,12 +79,12 @@ export function validateTaskForm(values: TaskFormValues): TaskFormErrors {
 }
 
 /** Convierte lo capturado en lo que espera la API: sin espacios sobrantes y opcionales vacíos = null. */
-export function toNewTaskInput(values: TaskFormValues, status: TaskStatus): NewTaskInput {
+export function toNewTaskInput(values: TaskFormValues): NewTaskInput {
   return {
     title: values.title.trim(),
     description: values.description.trim(),
     assignee: values.assignee.trim() || null,
     dueDate: values.dueDate || null,
-    status,
+    status: values.status,
   }
 }

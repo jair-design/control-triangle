@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite'
 import { useEffect, useRef } from 'react'
-import { BOARD_TEXT, type BoardColumnConfig } from '../../constants'
+import { BOARD_TEXT, TASK_FORM_TEXT, type BoardColumnConfig } from '../../constants'
 import { useRootStore } from '../../stores/useRootStore'
 import type { Task } from '../../types/board'
 import { formatShortDate, getInitials } from '../../utils/format'
@@ -23,16 +23,34 @@ function CalendarIcon() {
   )
 }
 
+function PencilIcon() {
+  return (
+    <svg
+      className="size-4"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M13.5 3.5l3 3L7 16H4v-3l9.5-9.5z" />
+    </svg>
+  )
+}
+
 interface TaskCardProps {
   task: Task
   styles: BoardColumnConfig['styles']
+  onEdit: (task: Task) => void
 }
 
-const TaskCard = observer(function TaskCard({ task, styles }: TaskCardProps) {
+const TaskCard = observer(function TaskCard({ task, styles, onEdit }: TaskCardProps) {
   const { board } = useRootStore()
   const dueDate = task.dueDate ? formatShortDate(task.dueDate) : null
   const articleRef = useRef<HTMLElement>(null)
-  const isNew = board.lastAddedId === task.id
+  const isNew = board.lastChangedId === task.id
 
   // La tarjeta recién creada queda al final de la columna: se desplaza hasta mostrarla.
   useEffect(() => {
@@ -43,14 +61,25 @@ const TaskCard = observer(function TaskCard({ task, styles }: TaskCardProps) {
     <li>
       <article
         ref={articleRef}
-        className="relative overflow-hidden rounded-xl border border-line bg-surface py-3.5 pr-3.5 pl-5 shadow-card transition-shadow hover:shadow-md"
+        className="group relative overflow-hidden rounded-xl border border-line bg-surface py-3.5 pr-3.5 pl-5 shadow-card transition-shadow hover:shadow-md"
       >
         <span
           className={`absolute inset-y-0 left-0 w-1.5 ${styles.accent}`}
           aria-hidden="true"
         />
 
-        <h3 className="text-sm font-semibold text-ink-950">{task.title}</h3>
+        {/* Visible al pasar el mouse o al enfocarlo con el teclado; siempre visible en pantallas táctiles. */}
+        <button
+          type="button"
+          onClick={() => onEdit(task)}
+          aria-label={TASK_FORM_TEXT.editTask(task.title)}
+          title={TASK_FORM_TEXT.editTask(task.title)}
+          className="absolute top-2 right-2 grid size-7 place-items-center rounded-lg bg-surface text-muted opacity-0 shadow-sm ring-1 ring-line transition hover:bg-ink-900 hover:text-brand-400 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-brand-600 group-hover:opacity-100 pointer-coarse:opacity-100"
+        >
+          <PencilIcon />
+        </button>
+
+        <h3 className="pr-7 text-sm font-semibold text-ink-950">{task.title}</h3>
         {task.description && (
           <p className="mt-1 line-clamp-3 text-sm text-muted">
             {task.description}

@@ -68,6 +68,12 @@ export async function apiRequest<T>(
         typeof data.message === 'string' ? data.message : API_ERROR_TEXT.validation
       throw new ApiError(response.status, message, toFieldErrors(data.errors))
     }
+    // El 404 ("La tarea no existe") y el 409 traen un mensaje pensado para el usuario.
+    const hasUserMessage =
+      response.status === HTTP_STATUS.notFound || response.status === HTTP_STATUS.conflict
+    if (hasUserMessage && isRecord(data) && typeof data.message === 'string') {
+      throw new ApiError(response.status, data.message)
+    }
     throw new ApiError(response.status, failureMessage)
   }
 

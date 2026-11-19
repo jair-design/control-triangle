@@ -31,6 +31,30 @@ export async function createTaskRequest(
   return toTask(created)
 }
 
+/** PATCH /api/tasks/:id: edita la tarea. Si cambia de estado, pasa al final de la otra columna. */
+export async function updateTaskRequest(
+  id: string,
+  input: NewTaskInput,
+  accessToken: string,
+): Promise<Task> {
+  const updated = await apiRequest<Task>(`${TASKS_PATH}/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    accessToken,
+    body: input,
+    failureMessage: API_ERROR_TEXT.updateTask,
+  })
+  return toTask(updated)
+}
+
+/** DELETE /api/tasks/:id: elimina la tarea (el backend responde 204 sin cuerpo). */
+export async function deleteTaskRequest(id: string, accessToken: string): Promise<void> {
+  await apiRequest<null>(`${TASKS_PATH}/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    accessToken,
+    failureMessage: API_ERROR_TEXT.deleteTask,
+  })
+}
+
 /** GET /api/tasks: todas las tareas, agrupadas por columna y ya ordenadas por posición. */
 export async function fetchTasksRequest(accessToken: string): Promise<TasksByStatus> {
   const data = await apiRequest<Partial<TasksByStatus>>(TASKS_PATH, {

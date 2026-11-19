@@ -6,6 +6,8 @@ export const TASKS_PATH = '/tasks'
 export const HTTP_STATUS = {
   badRequest: 400,
   unauthorized: 401,
+  notFound: 404,
+  conflict: 409,
 } as const
 
 // Estado que se usa cuando la petición ni siquiera llegó al servidor.
@@ -16,5 +18,7 @@ export const API_ERROR_TEXT = {
   unauthorized: 'Tu sesión no es válida. Vuelve a iniciar sesión.',
   validation: 'Revisa los datos del formulario.',
   createTask: 'No se pudo crear la tarea. Inténtalo de nuevo.',
+  updateTask: 'No se pudo guardar la tarea. Inténtalo de nuevo.',
+  deleteTask: 'No se pudo eliminar la tarea. Inténtalo de nuevo.',
   loadTasks: 'No se pudieron cargar las tareas.',
 } as const

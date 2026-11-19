@@ -1,6 +1,11 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 import { ApiError } from '../api/client'
-import { createTaskRequest, fetchTasksRequest } from '../api/tasks'
+import {
+  createTaskRequest,
+  deleteTaskRequest,
+  fetchTasksRequest,
+  updateTaskRequest,
+} from '../api/tasks'
 import { API_ERROR_TEXT, BOARD_COLUMNS, HTTP_STATUS } from '../constants'
 import type { NewTaskInput, Task, TaskStatus } from '../types/board'
 import type { SessionStore } from './SessionStore'
@@ -12,8 +17,8 @@ export class BoardStore {
   tasks: Task[] = []
   loadState: BoardLoadState = 'idle'
   loadError: string | null = null
-  // Última tarea creada: la tarjeta correspondiente se desplaza hasta quedar visible.
-  lastAddedId: string | null = null
+  // Última tarea creada o editada: su tarjeta se desplaza hasta quedar visible.
+  lastChangedId: string | null = null
 
   private readonly session: SessionStore
   // Cada carga recibe un número; solo la más reciente puede actualizar el tablero.
@@ -68,10 +73,42 @@ export class BoardStore {
   async createTask(input: NewTaskInput): Promise<Task> {
     const created = await this.withAccessToken((token) => createTaskRequest(input, token))
     runInAction(() => {
-      this.lastAddedId = created.id
+      this.lastChangedId = created.id
     })
     await this.loadTasks()
     return created
+  }
+
+  /** Edita la tarea en el backend (por su id) y recarga el tablero con los datos actualizados. */
+  async updateTask(id: string, input: NewTaskInput): Promise<Task> {
+    try {
+      const updated = await this.withAccessToken((token) => updateTaskRequest(id, input, token))
+      runInAction(() => {
+        this.lastChangedId = updated.id
+      })
+      await this.loadTasks()
+      return updated
+    } catch (error) {
+      // Si la tarea ya no existe (p. ej. la borraron en otro lado), el tablero se pone al día.
+      if (error instanceof ApiError && error.status === HTTP_STATUS.notFound) {
+        void this.loadTasks()
+      }
+      throw error
+    }
+  }
+
+  /** Elimina la tarea en el backend (por su id) y recarga el tablero. */
+  async deleteTask(id: string): Promise<void> {
+    try {
+      await this.withAccessToken((token) => deleteTaskRequest(id, token))
+      await this.loadTasks()
+    } catch (error) {
+      // Si la tarea ya no existe, el tablero se pone al día.
+      if (error instanceof ApiError && error.status === HTTP_STATUS.notFound) {
+        void this.loadTasks()
+      }
+      throw error
+    }
   }
 
   /** Vacía el tablero (al cerrar sesión) e ignora cualquier carga en curso. */
@@ -80,7 +117,7 @@ export class BoardStore {
     this.tasks = []
     this.loadState = 'idle'
     this.loadError = null
-    this.lastAddedId = null
+    this.lastChangedId = null
   }
 
   /** Ejecuta una llamada con el access token; ante un 401 renueva la sesión y reintenta una vez. */

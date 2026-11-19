@@ -20,3 +20,6 @@ export const MONGO_DUPLICATE_KEY_CODE = 11000
 // Intentos para asignar la posición si otra petición ocupa la misma a la vez.
 // Cada ronda deja pasar al menos una, así que cubre ese número de creaciones simultáneas.
 export const TASK_CREATE_MAX_ATTEMPTS = 10
+
+// Un _id de MongoDB (ObjectId) son 24 caracteres hexadecimales.
+export const TASK_ID_PATTERN = /^[0-9a-fA-F]{24}$/

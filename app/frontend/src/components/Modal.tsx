@@ -24,8 +24,11 @@ export function Modal({ labelledBy, busy, onClose, children }: ModalProps) {
       ref={dialogRef}
       aria-labelledby={labelledBy}
       // Esc: el navegador lo cierra por su cuenta; se controla para respetar el estado ocupado.
+      // stopPropagation: React hace "subir" este evento por sus componentes padres, y un diálogo
+      // anidado (p. ej. la confirmación dentro del formulario) cerraría también al de fuera.
       onCancel={(event) => {
         event.preventDefault()
+        event.stopPropagation()
         if (!busy) onClose()
       }}
       // Clic en el fondo oscuro (el propio <dialog>, no su contenido).

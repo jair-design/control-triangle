@@ -13,7 +13,7 @@ export interface Task {
   position: number
 }
 
-// Lo que captura el formulario de creación. La posición la decide el servidor.
+// Lo que captura el formulario de crear o editar. La posición la decide el servidor.
 export interface NewTaskInput {
   title: string
   description: string

@@ -6,6 +6,8 @@ export const BEARER_PATTERN = /^Bearer\s+(.+)$/i
 
 export const HTTP_STATUS = {
   created: 201,
+  noContent: 204,
+  ok: 200,
   badRequest: 400,
   unauthorized: 401,
   notFound: 404,
@@ -19,6 +21,8 @@ export const API_MESSAGES = {
   unauthorized: 'No autorizado',
   notFound: 'No encontrado',
   validation: 'Datos no válidos',
+  taskNotFound: 'La tarea no existe',
+  nothingToUpdate: 'Indica al menos un campo para actualizar',
   invalidJson: 'El cuerpo de la petición no es un JSON válido',
   bodyTooLarge: 'El cuerpo de la petición es demasiado grande',
   positionConflict:

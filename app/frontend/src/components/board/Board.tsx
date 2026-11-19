@@ -1,11 +1,17 @@
 import { observer } from 'mobx-react-lite'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { BOARD_COLUMNS, BOARD_TEXT } from '../../constants'
 import { useRootStore } from '../../stores/useRootStore'
+import type { Task } from '../../types/board'
 import BoardColumn from './BoardColumn'
+import { TaskFormModal } from './TaskFormModal'
 
 const Board = observer(function Board() {
   const { board } = useRootStore()
+  // La tarea que se está editando. El modal vive aquí y no en la tarjeta, porque al guardar
+  // la tarjeta puede cambiar de columna (y desmontarse) mientras el modal termina de cerrarse.
+  const [editing, setEditing] = useState<Task | null>(null)
+  const editingColumn = editing && BOARD_COLUMNS.find((c) => c.status === editing.status)
 
   // Carga el tablero al mostrarse y lo vacía al desmontarse (cierre de sesión).
   useEffect(() => {
@@ -45,9 +51,19 @@ const Board = observer(function Board() {
             column={column}
             tasks={board.tasksByStatus[column.status]}
             loading={loading}
+            onEdit={setEditing}
           />
         ))}
       </div>
+
+      {editing && editingColumn && (
+        <TaskFormModal
+          key={editing.id}
+          column={editingColumn}
+          task={editing}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </div>
   )
 })

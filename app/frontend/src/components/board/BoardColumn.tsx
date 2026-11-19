@@ -25,12 +25,14 @@ interface BoardColumnProps {
   column: BoardColumnConfig
   tasks: Task[]
   loading: boolean
+  onEdit: (task: Task) => void
 }
 
 const BoardColumn = observer(function BoardColumn({
   column,
   tasks,
   loading,
+  onEdit,
 }: BoardColumnProps) {
   const headingId = `column-${column.status}`
   const [creating, setCreating] = useState(false)
@@ -76,7 +78,7 @@ const BoardColumn = observer(function BoardColumn({
       ) : (
         <ul className="flex flex-1 flex-col gap-3 pr-1 md:min-h-0 md:overflow-y-auto">
           {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} styles={column.styles} />
+            <TaskCard key={task.id} task={task} styles={column.styles} onEdit={onEdit} />
           ))}
         </ul>
       )}
