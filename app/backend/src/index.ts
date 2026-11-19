@@ -1,17 +1,39 @@
-import express from "express";
+import express from 'express'
+import { loadConfig } from './config.js'
+import { API_PREFIX, EXIT_CODE_STARTUP_ERROR } from './constants/index.js'
+import { closeDb, connectDb } from './db.js'
+import { healthRouter } from './routes/health.js'
 
-const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+async function main() {
+  const config = loadConfig()
 
-// Todos los endpoints del backend viven bajo /api
-const api = express.Router();
+  // Primero la base: si no hay conexión, no tiene sentido aceptar peticiones.
+  await connectDb(config.mongodbUri)
+  console.log('MongoDB conectado')
 
-api.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
+  const app = express()
+  app.use(API_PREFIX, healthRouter)
 
-app.use("/api", api);
+  const server = app.listen(config.port, () => {
+    console.log(`Backend escuchando en http://localhost:${config.port}`)
+  })
 
-app.listen(PORT, () => {
-  console.log(`Backend escuchando en http://localhost:${PORT}`);
-});
+  // Cierre limpio: deja de aceptar peticiones y libera la conexión a la base.
+  const shutdown = (signal: string) => {
+    console.log(`${signal} recibida: cerrando…`)
+    server.close(() => {
+      closeDb()
+        .catch((error: unknown) => console.error('Error al cerrar MongoDB:', error))
+        .finally(() => process.exit(0))
+    })
+  }
+  process.once('SIGINT', () => shutdown('SIGINT'))
+  process.once('SIGTERM', () => shutdown('SIGTERM'))
+}
+
+main().catch((error: unknown) => {
+  // Solo el mensaje: nunca se imprime la cadena de conexión, que lleva la contraseña.
+  const message = error instanceof Error ? error.message : String(error)
+  console.error(`No se pudo iniciar el backend: ${message}`)
+  process.exit(EXIT_CODE_STARTUP_ERROR)
+})
