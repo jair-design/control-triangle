@@ -3,6 +3,7 @@ import {
   HTTP_STATUS,
   MONGO_DUPLICATE_KEY_CODE,
   TASK_CREATE_MAX_ATTEMPTS,
+  TASK_STATUSES,
   type TaskStatus,
 } from '../constants/index.js'
 import { HttpError } from '../errors.js'
@@ -35,4 +36,19 @@ export async function createTask(input: CreateTaskInput) {
     }
   }
   throw new HttpError(HTTP_STATUS.conflict, API_MESSAGES.positionConflict)
+}
+
+/**
+ * Todas las tareas de la base, agrupadas por columna y ordenadas por posición.
+ * Siempre incluye las tres columnas, aunque alguna esté vacía.
+ */
+export async function listTasksByStatus() {
+  // Ordenar por {status, position} aprovecha el índice único: no hace falta ordenar en memoria.
+  const tasks = await Task.find().sort({ status: 1, position: 1 })
+
+  const grouped = Object.fromEntries(
+    TASK_STATUSES.map((status) => [status, [] as typeof tasks]),
+  ) as Record<TaskStatus, typeof tasks>
+  for (const task of tasks) grouped[task.status as TaskStatus].push(task)
+  return grouped
 }

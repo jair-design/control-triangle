@@ -16,4 +16,5 @@ export const API_ERROR_TEXT = {
   unauthorized: 'Tu sesión no es válida. Vuelve a iniciar sesión.',
   validation: 'Revisa los datos del formulario.',
   createTask: 'No se pudo crear la tarea. Inténtalo de nuevo.',
+  loadTasks: 'No se pudieron cargar las tareas.',
 } as const

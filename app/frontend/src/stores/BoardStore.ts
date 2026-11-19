@@ -1,21 +1,29 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 import { ApiError } from '../api/client'
-import { createTaskRequest } from '../api/tasks'
+import { createTaskRequest, fetchTasksRequest } from '../api/tasks'
 import { API_ERROR_TEXT, BOARD_COLUMNS, HTTP_STATUS } from '../constants'
 import type { NewTaskInput, Task, TaskStatus } from '../types/board'
-import { SEED_TASKS } from './boardSeed'
 import type { SessionStore } from './SessionStore'
 
+// idle: sin cargar · loading: primera carga · ready: con datos · error: la última carga falló
+export type BoardLoadState = 'idle' | 'loading' | 'ready' | 'error'
+
 export class BoardStore {
-  // Por ahora son datos de prueba; luego se cargarán desde el backend (listado).
-  tasks: Task[] = SEED_TASKS.map((task) => ({ ...task }))
+  tasks: Task[] = []
+  loadState: BoardLoadState = 'idle'
+  loadError: string | null = null
   // Última tarea creada: la tarjeta correspondiente se desplaza hasta quedar visible.
   lastAddedId: string | null = null
 
   private readonly session: SessionStore
+  // Cada carga recibe un número; solo la más reciente puede actualizar el tablero.
+  private loadSeq = 0
 
   constructor(session: SessionStore) {
-    makeAutoObservable<BoardStore, 'session'>(this, { session: false })
+    makeAutoObservable<BoardStore, 'session' | 'loadSeq'>(this, {
+      session: false,
+      loadSeq: false,
+    })
     this.session = session
   }
 
@@ -31,23 +39,48 @@ export class BoardStore {
     return grouped
   }
 
-  /** Crea la tarea en el backend y, si sale bien, la añade al final de su columna. */
+  /**
+   * Recarga todas las columnas con una sola petición. No lanza: si falla, deja el error
+   * en loadError (y conserva lo que ya estaba en pantalla).
+   */
+  async loadTasks(): Promise<void> {
+    const seq = ++this.loadSeq
+    if (this.loadState !== 'ready') this.loadState = 'loading'
+    this.loadError = null
+
+    try {
+      const grouped = await this.withAccessToken((token) => fetchTasksRequest(token))
+      if (seq !== this.loadSeq) return
+      runInAction(() => {
+        this.tasks = BOARD_COLUMNS.flatMap(({ status }) => grouped[status])
+        this.loadState = 'ready'
+      })
+    } catch (error) {
+      if (seq !== this.loadSeq) return
+      runInAction(() => {
+        this.loadError = error instanceof Error ? error.message : API_ERROR_TEXT.loadTasks
+        this.loadState = this.tasks.length > 0 ? 'ready' : 'error'
+      })
+    }
+  }
+
+  /** Crea la tarea en el backend y recarga el tablero para reflejar el estado real de la base. */
   async createTask(input: NewTaskInput): Promise<Task> {
     const created = await this.withAccessToken((token) => createTaskRequest(input, token))
-    runInAction(() => this.addTask(created))
+    runInAction(() => {
+      this.lastAddedId = created.id
+    })
+    await this.loadTasks()
     return created
   }
 
-  private addTask(task: Task) {
-    // Mientras el tablero mezcle datos de prueba con lo guardado en la base, las posiciones del
-    // servidor no coinciden con las de las tarjetas de prueba: se coloca al final de la columna.
-    // Cuando exista el listado y se retiren los datos de prueba, se usará la posición del servidor.
-    const lastLocalPosition = Math.max(
-      -1,
-      ...this.tasks.filter((t) => t.status === task.status).map((t) => t.position),
-    )
-    this.tasks.push({ ...task, position: Math.max(task.position, lastLocalPosition + 1) })
-    this.lastAddedId = task.id
+  /** Vacía el tablero (al cerrar sesión) e ignora cualquier carga en curso. */
+  reset() {
+    this.loadSeq++
+    this.tasks = []
+    this.loadState = 'idle'
+    this.loadError = null
+    this.lastAddedId = null
   }
 
   /** Ejecuta una llamada con el access token; ante un 401 renueva la sesión y reintenta una vez. */

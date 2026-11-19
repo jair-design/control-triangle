@@ -48,6 +48,8 @@ export const BOARD_COLUMNS: readonly BoardColumnConfig[] = [
 export const BOARD_TEXT = {
   boardLabel: 'Tablero de tareas',
   emptyColumn: 'Sin tarjetas',
+  loadingColumn: 'Cargando tareas…',
+  retry: 'Reintentar',
   unassigned: 'Sin asignar',
   cardCount: (count: number) => (count === 1 ? '1 tarjeta' : `${count} tarjetas`),
 } as const

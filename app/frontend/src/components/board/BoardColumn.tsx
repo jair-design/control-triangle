@@ -24,11 +24,13 @@ function PlusIcon() {
 interface BoardColumnProps {
   column: BoardColumnConfig
   tasks: Task[]
+  loading: boolean
 }
 
 const BoardColumn = observer(function BoardColumn({
   column,
   tasks,
+  loading,
 }: BoardColumnProps) {
   const headingId = `column-${column.status}`
   const [creating, setCreating] = useState(false)
@@ -69,7 +71,7 @@ const BoardColumn = observer(function BoardColumn({
 
       {tasks.length === 0 ? (
         <p className="rounded-xl border border-dashed border-line px-3 py-6 text-center text-sm text-muted">
-          {BOARD_TEXT.emptyColumn}
+          {loading ? BOARD_TEXT.loadingColumn : BOARD_TEXT.emptyColumn}
         </p>
       ) : (
         <ul className="flex flex-1 flex-col gap-3 pr-1 md:min-h-0 md:overflow-y-auto">
