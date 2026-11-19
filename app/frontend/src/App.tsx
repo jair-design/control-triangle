@@ -5,6 +5,7 @@ import { CALLBACK_PATH, LOGOUT_PATH } from './auth/config'
 import { AppShell } from './components/AppShell'
 import Board from './components/board/Board'
 import { LoginScreen } from './components/LoginScreen'
+import { RestoringScreen } from './components/RestoringScreen'
 import { useRootStore } from './stores/useRootStore'
 
 const BUSY_LOGIN_MESSAGE = 'Iniciando sesión…'
@@ -78,7 +79,7 @@ const App = observer(function App() {
   }
 
   if (session.restoring) {
-    return <LoginScreen error={null} busyMessage={BUSY_LOGIN_MESSAGE} />
+    return <RestoringScreen message={BUSY_LOGIN_MESSAGE} />
   }
 
   if (session.isAuthenticated) {
