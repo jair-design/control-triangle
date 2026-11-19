@@ -2,13 +2,13 @@ import mongoose from 'mongoose'
 import { DB_CONNECT_TIMEOUT_MS, DB_PING_TIMEOUT_MS } from './constants/index.js'
 import { Task } from './models/index.js'
 
-// Todos los modelos registrados: al conectar se crea su colección e índices.
+// Todos los modelos registrados: al conectar se sincronizan su colección e índices.
 const models = [Task]
 
 /** Conecta a MongoDB (se autentica) y deja listas las colecciones. Lanza si no puede. */
 export async function connectDb(uri: string): Promise<void> {
   await mongoose.connect(uri, { serverSelectionTimeoutMS: DB_CONNECT_TIMEOUT_MS })
-  await Promise.all(models.map((model) => model.init()))
+  await Promise.all(models.map((model) => model.syncIndexes()))
 }
 
 /** Comprueba con un ping real que la base responde ahora mismo. */

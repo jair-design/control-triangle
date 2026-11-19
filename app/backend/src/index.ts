@@ -1,8 +1,7 @@
-import express from 'express'
+import { createApp } from './app.js'
 import { loadConfig } from './config.js'
-import { API_PREFIX, EXIT_CODE_STARTUP_ERROR } from './constants/index.js'
+import { EXIT_CODE_STARTUP_ERROR } from './constants/index.js'
 import { closeDb, connectDb } from './db.js'
-import { healthRouter } from './routes/health.js'
 
 async function main() {
   const config = loadConfig()
@@ -11,10 +10,7 @@ async function main() {
   await connectDb(config.mongodbUri)
   console.log('MongoDB conectado')
 
-  const app = express()
-  app.use(API_PREFIX, healthRouter)
-
-  const server = app.listen(config.port, () => {
+  const server = createApp(config).listen(config.port, () => {
     console.log(`Backend escuchando en http://localhost:${config.port}`)
   })
 

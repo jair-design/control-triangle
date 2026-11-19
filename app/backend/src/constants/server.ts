@@ -6,6 +6,8 @@ export const API_PREFIX = '/api'
 
 // Variables de entorno obligatorias, para mensajes de error claros al arrancar.
 export const ENV_MONGODB_URI = 'MONGODB_URI'
+export const ENV_COGNITO_USER_POOL_ID = 'COGNITO_USER_POOL_ID'
+export const ENV_COGNITO_CLIENT_ID = 'COGNITO_CLIENT_ID'
 
 // Tiempo máximo para elegir un servidor de MongoDB al conectar (arranque).
 export const DB_CONNECT_TIMEOUT_MS = 5000

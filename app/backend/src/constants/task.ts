@@ -13,3 +13,10 @@ export const TASK_MIN_POSITION = 0
 
 // Nombre de la colección en MongoDB (Mongoose lo pluraliza a partir del modelo).
 export const TASK_MODEL_NAME = 'Task'
+
+// Código de MongoDB para una violación de índice único.
+export const MONGO_DUPLICATE_KEY_CODE = 11000
+
+// Intentos para asignar la posición si otra petición ocupa la misma a la vez.
+// Cada ronda deja pasar al menos una, así que cubre ese número de creaciones simultáneas.
+export const TASK_CREATE_MAX_ATTEMPTS = 10

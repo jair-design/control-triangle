@@ -18,13 +18,19 @@ const taskSchema = new Schema(
       required: [true, 'El título es obligatorio'],
       trim: true,
       minlength: [1, 'El título no puede estar vacío'],
-      maxlength: TASK_TITLE_MAX_LENGTH,
+      maxlength: [
+        TASK_TITLE_MAX_LENGTH,
+        `El título no puede superar los ${TASK_TITLE_MAX_LENGTH} caracteres`,
+      ],
     },
     description: {
       type: String,
       default: '',
       trim: true,
-      maxlength: TASK_DESCRIPTION_MAX_LENGTH,
+      maxlength: [
+        TASK_DESCRIPTION_MAX_LENGTH,
+        `La descripción no puede superar los ${TASK_DESCRIPTION_MAX_LENGTH} caracteres`,
+      ],
     },
     // Fecha de vencimiento AAAA-MM-DD, opcional. Se guarda como texto para que no cambie
     // de día por la zona horaria (el frontend la maneja igual).
@@ -41,7 +47,10 @@ const taskSchema = new Schema(
       type: String,
       default: null,
       trim: true,
-      maxlength: TASK_ASSIGNEE_MAX_LENGTH,
+      maxlength: [
+        TASK_ASSIGNEE_MAX_LENGTH,
+        `La persona asignada no puede superar los ${TASK_ASSIGNEE_MAX_LENGTH} caracteres`,
+      ],
     },
     status: {
       type: String,
@@ -54,7 +63,7 @@ const taskSchema = new Schema(
     position: {
       type: Number,
       required: [true, 'La posición es obligatoria'],
-      min: TASK_MIN_POSITION,
+      min: [TASK_MIN_POSITION, 'La posición no puede ser negativa'],
       validate: {
         validator: Number.isInteger,
         message: 'La posición debe ser un número entero',
@@ -75,8 +84,9 @@ const taskSchema = new Schema(
   },
 )
 
-// Consulta principal del tablero: las tareas de una columna, ordenadas.
-taskSchema.index({ status: 1, position: 1 })
+// Consulta principal del tablero (las tareas de una columna, ordenadas) y garantía de que
+// no haya dos tarjetas con la misma posición en una columna, aunque se creen a la vez.
+taskSchema.index({ status: 1, position: 1 }, { unique: true })
 
 export type TaskDocument = InferSchemaType<typeof taskSchema>
 export const Task = model(TASK_MODEL_NAME, taskSchema)
