@@ -12,3 +12,12 @@ export interface Task {
   // Orden dentro de la columna (menor = más arriba).
   position: number
 }
+
+// Lo que captura el formulario de creación. La posición la decide el servidor.
+export interface NewTaskInput {
+  title: string
+  description: string
+  assignee: string | null
+  dueDate: string | null
+  status: TaskStatus
+}

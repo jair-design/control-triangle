@@ -111,6 +111,12 @@ export class SessionStore {
     void signOut(refreshToken)
   }
 
+  /** Renueva ya los tokens (p. ej. tras un 401 de la API). Devuelve false si la sesión se cerró. */
+  async renew(): Promise<boolean> {
+    await this.refresh()
+    return this.tokens !== null
+  }
+
   /**
    * Activa el ciclo de la sesión. Si hay una sesión recuperada de localStorage,
    * primero la valida contra Cognito. Idempotente: se puede llamar de nuevo sin duplicar nada.

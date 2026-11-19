@@ -1,5 +1,7 @@
 import { observer } from 'mobx-react-lite'
+import { useEffect, useRef } from 'react'
 import { BOARD_TEXT, type BoardColumnConfig } from '../../constants'
+import { useRootStore } from '../../stores/useRootStore'
 import type { Task } from '../../types/board'
 import { formatShortDate, getInitials } from '../../utils/format'
 
@@ -27,11 +29,22 @@ interface TaskCardProps {
 }
 
 const TaskCard = observer(function TaskCard({ task, styles }: TaskCardProps) {
+  const { board } = useRootStore()
   const dueDate = task.dueDate ? formatShortDate(task.dueDate) : null
+  const articleRef = useRef<HTMLElement>(null)
+  const isNew = board.lastAddedId === task.id
+
+  // La tarjeta recién creada queda al final de la columna: se desplaza hasta mostrarla.
+  useEffect(() => {
+    if (isNew) articleRef.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+  }, [isNew])
 
   return (
     <li>
-      <article className="relative overflow-hidden rounded-xl border border-line bg-surface py-3.5 pr-3.5 pl-5 shadow-card transition-shadow hover:shadow-md">
+      <article
+        ref={articleRef}
+        className="relative overflow-hidden rounded-xl border border-line bg-surface py-3.5 pr-3.5 pl-5 shadow-card transition-shadow hover:shadow-md"
+      >
         <span
           className={`absolute inset-y-0 left-0 w-1.5 ${styles.accent}`}
           aria-hidden="true"
