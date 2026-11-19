@@ -1,3 +1,5 @@
+import { useDroppable } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { observer } from 'mobx-react-lite'
 import { useState } from 'react'
 import { BOARD_TEXT, TASK_FORM_TEXT, type BoardColumnConfig } from '../../constants'
@@ -25,6 +27,8 @@ interface BoardColumnProps {
   column: BoardColumnConfig
   tasks: Task[]
   loading: boolean
+  // La tarjeta que se arrastra está ahora sobre esta columna.
+  highlighted: boolean
   onEdit: (task: Task) => void
 }
 
@@ -32,15 +36,18 @@ const BoardColumn = observer(function BoardColumn({
   column,
   tasks,
   loading,
+  highlighted,
   onEdit,
 }: BoardColumnProps) {
   const headingId = `column-${column.status}`
   const [creating, setCreating] = useState(false)
+  // Toda la zona de tarjetas es destino de soltado, también cuando la columna está vacía.
+  const { setNodeRef } = useDroppable({ id: column.status })
 
   return (
     <section
       aria-labelledby={headingId}
-      className={`flex flex-col rounded-2xl border border-t-4 border-line p-3 md:min-h-0 ${column.styles.panel}`}
+      className={`flex flex-col rounded-2xl border border-t-4 border-line p-3 transition-shadow md:min-h-0 ${column.styles.panel} ${highlighted ? 'ring-2 ring-brand-500' : ''}`}
     >
       <header className="flex items-center justify-between px-1 pb-3">
         <div className="flex items-center gap-2">
@@ -71,17 +78,21 @@ const BoardColumn = observer(function BoardColumn({
         </div>
       </header>
 
-      {tasks.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-line px-3 py-6 text-center text-sm text-muted">
-          {loading ? BOARD_TEXT.loadingColumn : BOARD_TEXT.emptyColumn}
-        </p>
-      ) : (
-        <ul className="flex flex-1 flex-col gap-3 pr-1 md:min-h-0 md:overflow-y-auto">
-          {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} styles={column.styles} onEdit={onEdit} />
-          ))}
-        </ul>
-      )}
+      <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+        <div ref={setNodeRef} className="flex min-h-24 flex-1 flex-col md:min-h-0">
+          {tasks.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-line px-3 py-6 text-center text-sm text-muted">
+              {loading ? BOARD_TEXT.loadingColumn : BOARD_TEXT.emptyColumn}
+            </p>
+          ) : (
+            <ul className="flex flex-1 flex-col gap-3 pr-1 md:min-h-0 md:overflow-y-auto">
+              {tasks.map((task) => (
+                <TaskCard key={task.id} task={task} styles={column.styles} onEdit={onEdit} />
+              ))}
+            </ul>
+          )}
+        </div>
+      </SortableContext>
       {creating && (
         <TaskFormModal column={column} onClose={() => setCreating(false)} />
       )}

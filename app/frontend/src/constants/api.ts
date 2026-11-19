@@ -20,5 +20,6 @@ export const API_ERROR_TEXT = {
   createTask: 'No se pudo crear la tarea. Inténtalo de nuevo.',
   updateTask: 'No se pudo guardar la tarea. Inténtalo de nuevo.',
   deleteTask: 'No se pudo eliminar la tarea. Inténtalo de nuevo.',
+  moveTask: 'No se pudo mover la tarjeta. El tablero se restauró.',
   loadTasks: 'No se pudieron cargar las tareas.',
 } as const

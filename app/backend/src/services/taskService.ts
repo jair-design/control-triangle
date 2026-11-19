@@ -1,20 +1,28 @@
+import type { Types } from 'mongoose'
 import {
   API_MESSAGES,
   HTTP_STATUS,
   MONGO_DUPLICATE_KEY_CODE,
   TASK_ID_PATTERN,
   TASK_CREATE_MAX_ATTEMPTS,
+  TASK_MOVE_MAX_ATTEMPTS,
   TASK_STATUSES,
   type TaskStatus,
 } from '../constants/index.js'
 import { HttpError } from '../errors.js'
 import { Task } from '../models/index.js'
-import type { CreateTaskInput, UpdateTaskInput } from '../validation/taskInput.js'
+import type { CreateTaskInput, MoveTaskInput, UpdateTaskInput } from '../validation/taskInput.js'
 
-const isDuplicateKeyError = (error: unknown): boolean =>
-  typeof error === 'object' &&
-  error !== null &&
-  (error as { code?: unknown }).code === MONGO_DUPLICATE_KEY_CODE
+const isDuplicateKeyError = (error: unknown): boolean => {
+  if (typeof error !== 'object' || error === null) return false
+  const { code, writeErrors } = error as { code?: unknown; writeErrors?: unknown }
+  if (code === MONGO_DUPLICATE_KEY_CODE) return true
+  // Las escrituras en lote (bulkWrite) reportan el detalle en writeErrors.
+  return (
+    Array.isArray(writeErrors) &&
+    writeErrors.some((e) => (e as { code?: unknown }).code === MONGO_DUPLICATE_KEY_CODE)
+  )
+}
 
 /** Posición libre al final de la columna: la máxima actual + 1 (0 si la columna está vacía). */
 async function nextPosition(status: TaskStatus): Promise<number> {
@@ -89,4 +97,113 @@ export async function deleteTask(id: string): Promise<void> {
   if (!TASK_ID_PATTERN.test(id)) throw taskNotFound()
   const deleted = await Task.findByIdAndDelete(id)
   if (!deleted) throw taskNotFound()
+}
+
+// Una tarea dentro del orden de una columna. position es la que tiene hoy en esa columna;
+// null si todavía pertenece a otra (se está mudando a esta).
+interface ColumnSlot {
+  id: Types.ObjectId
+  position: number | null
+}
+
+/**
+ * Deja la columna con exactamente este orden (posiciones 0, 1, 2…) escribiendo solo las
+ * tareas que cambian. Con el índice único {status, position} no se puede mover una a una
+ * (dos compartirían posición un instante), así que se hace en dos pasos:
+ *   1. las que cambian pasan a posiciones temporales por encima de todas las actuales,
+ *      conservando el orden entre ellas;
+ *   2. se les asigna su posición final, en orden ascendente.
+ * Ninguno de los dos pasos colisiona con otra tarea. Si el proceso se interrumpe entre ambos,
+ * el orden sigue siendo el correcto (solo quedan posiciones altas) y el siguiente movimiento
+ * lo normaliza. MongoDB sin conjunto de réplicas no ofrece transacciones.
+ */
+async function writeColumnOrder(
+  status: TaskStatus,
+  ordered: ColumnSlot[],
+  movedId?: Types.ObjectId,
+): Promise<void> {
+  const changed = ordered
+    .map((slot, index) => ({ ...slot, index }))
+    .filter((slot) => slot.position !== slot.index)
+  if (changed.length === 0) return
+
+  const base = Math.max(-1, ...ordered.map((slot) => slot.position ?? -1)) + 1
+  const now = new Date()
+
+  // Solo la tarea que se mueve puede cambiar de columna. Para las demás se exige que sigan en
+  // esta columna: si otra petición las movió mientras tanto, no se tocan (y no se les revierte
+  // el estado).
+  const filterFor = (id: Types.ObjectId) =>
+    movedId && id.equals(movedId) ? { _id: id } : { _id: id, status }
+
+  await Task.bulkWrite(
+    changed.map((slot, k) => ({
+      updateOne: {
+        filter: filterFor(slot.id),
+        update: {
+          $set: { position: base + k, ...(movedId && slot.id.equals(movedId) && { status }) },
+        },
+      },
+    })),
+    { ordered: true, timestamps: false },
+  )
+  await Task.bulkWrite(
+    changed.map((slot) => ({
+      updateOne: {
+        filter: filterFor(slot.id),
+        update: {
+          $set: {
+            position: slot.index,
+            // Solo la tarea movida cambia de "versión"; las demás solo se renumeran.
+            ...(movedId && slot.id.equals(movedId) && { updatedAt: now }),
+          },
+        },
+      },
+    })),
+    { ordered: true, timestamps: false },
+  )
+}
+
+/**
+ * Mueve una tarea a la columna `status` en el lugar `index` (0 = al inicio, n = al final).
+ * Recalcula las posiciones de la columna de destino (y compacta la de origen si cambió de
+ * columna). Un índice mayor que la cantidad de tarjetas equivale a "al final".
+ */
+export async function moveTask(id: string, { status, index }: MoveTaskInput) {
+  if (!TASK_ID_PATTERN.test(id)) throw taskNotFound()
+
+  for (let attempt = 1; attempt <= TASK_MOVE_MAX_ATTEMPTS; attempt++) {
+    const task = await Task.findById(id).select('status position')
+    if (!task) throw taskNotFound()
+    const sourceStatus = task.status as TaskStatus
+
+    // Columna de destino en su orden actual, sin la tarea que se mueve.
+    const inDestination = await Task.find({ status }).sort({ position: 1 }).select('position').lean()
+    const ordered: ColumnSlot[] = inDestination
+      .filter((doc) => !doc._id.equals(task._id))
+      .map((doc) => ({ id: doc._id, position: doc.position }))
+    ordered.splice(Math.min(index, ordered.length), 0, {
+      id: task._id,
+      position: sourceStatus === status ? task.position : null,
+    })
+
+    try {
+      await writeColumnOrder(status, ordered, task._id)
+
+      if (sourceStatus !== status) {
+        const rest = await Task.find({ status: sourceStatus })
+          .sort({ position: 1 })
+          .select('position')
+          .lean()
+        await writeColumnOrder(
+          sourceStatus,
+          rest.map((doc) => ({ id: doc._id, position: doc.position })),
+        )
+      }
+      return await Task.findById(id)
+    } catch (error) {
+      if (!isDuplicateKeyError(error)) throw error
+    }
+  }
+  throw new HttpError(HTTP_STATUS.conflict, API_MESSAGES.positionConflict)
 }

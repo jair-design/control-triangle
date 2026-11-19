@@ -23,3 +23,6 @@ export const TASK_CREATE_MAX_ATTEMPTS = 10
 
 // Un _id de MongoDB (ObjectId) son 24 caracteres hexadecimales.
 export const TASK_ID_PATTERN = /^[0-9a-fA-F]{24}$/
+
+// Intentos para reordenar si otra operación toca la misma columna a la vez.
+export const TASK_MOVE_MAX_ATTEMPTS = 10

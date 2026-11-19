@@ -4,9 +4,10 @@ import {
   createTaskRequest,
   deleteTaskRequest,
   fetchTasksRequest,
+  moveTaskRequest,
   updateTaskRequest,
 } from '../api/tasks'
-import { API_ERROR_TEXT, BOARD_COLUMNS, HTTP_STATUS } from '../constants'
+import { API_ERROR_TEXT, BOARD_COLUMNS, HTTP_STATUS, LANDED_DURATION_MS } from '../constants'
 import type { NewTaskInput, Task, TaskStatus } from '../types/board'
 import type { SessionStore } from './SessionStore'
 
@@ -19,15 +20,25 @@ export class BoardStore {
   loadError: string | null = null
   // Última tarea creada o editada: su tarjeta se desplaza hasta quedar visible.
   lastChangedId: string | null = null
+  // Tarjeta que acaba de guardarse en su nuevo lugar: muestra la animación de confirmación.
+  landedId: string | null = null
 
   private readonly session: SessionStore
   // Cada carga recibe un número; solo la más reciente puede actualizar el tablero.
   private loadSeq = 0
+  // Movimientos enviados al backend que aún no terminaron.
+  private pendingMoves = 0
+  private landedTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor(session: SessionStore) {
-    makeAutoObservable<BoardStore, 'session' | 'loadSeq'>(this, {
+    makeAutoObservable<
+      BoardStore,
+      'session' | 'loadSeq' | 'pendingMoves' | 'landedTimer'
+    >(this, {
       session: false,
       loadSeq: false,
+      pendingMoves: false,
+      landedTimer: false,
     })
     this.session = session
   }
@@ -111,6 +122,61 @@ export class BoardStore {
     }
   }
 
+  /**
+   * Mueve la tarjeta a la columna `status` en el lugar `index` (0 = al inicio). El tablero se
+   * actualiza al instante y el movimiento se guarda en el backend; luego se recarga con lo que
+   * quedó guardado. Si falla, se restaura el tablero y se lanza el error.
+   */
+  async moveTask(id: string, status: TaskStatus, index: number): Promise<void> {
+    this.applyMove(id, status, index)
+    this.pendingMoves++
+    try {
+      await this.withAccessToken((token) => moveTaskRequest(id, { status, index }, token))
+    } catch (error) {
+      this.pendingMoves--
+      await this.loadTasks()
+      throw error
+    }
+    this.pendingMoves--
+    // Con varios movimientos seguidos, solo se recarga al terminar el último.
+    if (this.pendingMoves === 0) await this.loadTasks()
+    this.markLanded(id)
+  }
+
+  // Reordena en memoria igual que lo hará el servidor: inserta en el lugar indicado y
+  // renumera 0..n-1 las columnas afectadas.
+  private applyMove(id: string, status: TaskStatus, index: number) {
+    const task = this.tasks.find((t) => t.id === id)
+    if (!task) return
+    const grouped = this.tasksByStatus
+    const source = task.status
+
+    const destination = grouped[status].filter((t) => t.id !== id)
+    destination.splice(Math.min(index, destination.length), 0, task)
+    destination.forEach((t, position) => {
+      t.status = status
+      t.position = position
+    })
+    if (source !== status) {
+      grouped[source]
+        .filter((t) => t.id !== id)
+        .forEach((t, position) => {
+          t.position = position
+        })
+    }
+  }
+
+  private markLanded(id: string) {
+    if (this.landedTimer !== null) clearTimeout(this.landedTimer)
+    this.landedId = id
+    this.landedTimer = setTimeout(() => this.clearLanded(), LANDED_DURATION_MS)
+  }
+
+  private clearLanded() {
+    this.landedId = null
+    this.landedTimer = null
+  }
+
   /** Vacía el tablero (al cerrar sesión) e ignora cualquier carga en curso. */
   reset() {
     this.loadSeq++
@@ -118,6 +184,10 @@ export class BoardStore {
     this.loadState = 'idle'
     this.loadError = null
     this.lastChangedId = null
+    this.landedId = null
+    this.pendingMoves = 0
+    if (this.landedTimer !== null) clearTimeout(this.landedTimer)
+    this.landedTimer = null
   }
 
   /** Ejecuta una llamada con el access token; ante un 401 renueva la sesión y reintenta una vez. */

@@ -29,12 +29,20 @@ const Toaster = observer(function Toaster() {
       aria-live="polite"
       className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4"
     >
-      {toast.message && (
-        <p className="flex items-center gap-2 rounded-xl bg-ink-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
-          <CheckIcon />
-          {toast.message}
-        </p>
-      )}
+      {toast.message &&
+        (toast.kind === 'error' ? (
+          <p
+            role="alert"
+            className="rounded-xl bg-red-700 px-4 py-3 text-sm font-medium text-white shadow-lg"
+          >
+            {toast.message}
+          </p>
+        ) : (
+          <p className="flex items-center gap-2 rounded-xl bg-ink-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
+            <CheckIcon />
+            {toast.message}
+          </p>
+        ))}
     </div>
   )
 })

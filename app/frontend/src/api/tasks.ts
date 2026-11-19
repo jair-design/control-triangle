@@ -46,6 +46,21 @@ export async function updateTaskRequest(
   return toTask(updated)
 }
 
+/** POST /api/tasks/:id/move: mueve la tarea a una columna y a un lugar concreto de ella. */
+export async function moveTaskRequest(
+  id: string,
+  target: { status: TaskStatus; index: number },
+  accessToken: string,
+): Promise<Task> {
+  const moved = await apiRequest<Task>(`${TASKS_PATH}/${encodeURIComponent(id)}/move`, {
+    method: 'POST',
+    accessToken,
+    body: target,
+    failureMessage: API_ERROR_TEXT.moveTask,
+  })
+  return toTask(moved)
+}
+
 /** DELETE /api/tasks/:id: elimina la tarea (el backend responde 204 sin cuerpo). */
 export async function deleteTaskRequest(id: string, accessToken: string): Promise<void> {
   await apiRequest<null>(`${TASKS_PATH}/${encodeURIComponent(id)}`, {

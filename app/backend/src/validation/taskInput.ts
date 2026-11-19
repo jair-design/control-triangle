@@ -89,3 +89,34 @@ export function parseUpdateTaskInput(body: unknown): UpdateTaskInput {
   }
   return fields
 }
+
+export interface MoveTaskInput {
+  status: TaskStatus
+  // Lugar que ocupará la tarea en la columna de destino: 0 = al inicio, n = al final.
+  index: number
+}
+
+/** Cuerpo de POST /tasks/:id/move: columna de destino y lugar dentro de ella. */
+export function parseMoveTaskInput(body: unknown): MoveTaskInput {
+  const errors: Record<string, string> = {}
+  const source = isPlainObject(body) ? body : {}
+
+  const status = source.status
+  if (status === undefined || status === null || status === '') {
+    errors.status = 'El estado es obligatorio'
+  } else if (!TASK_STATUSES.includes(status as TaskStatus)) {
+    errors.status = `El estado debe ser uno de: ${TASK_STATUSES.join(', ')}`
+  }
+
+  const index = source.index
+  if (index === undefined || index === null) {
+    errors.index = 'El índice es obligatorio'
+  } else if (typeof index !== 'number' || !Number.isInteger(index) || index < 0) {
+    errors.index = 'El índice debe ser un número entero mayor o igual a 0'
+  }
+
+  if (Object.keys(errors).length > 0) {
+    throw new HttpError(HTTP_STATUS.badRequest, API_MESSAGES.validation, errors)
+  }
+  return { status: status as TaskStatus, index: index as number }
+}
