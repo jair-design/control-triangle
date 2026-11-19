@@ -4,7 +4,14 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "db:restart": "docker compose restart",
+    "db:status": "docker compose ps",
+    "db:logs": "docker compose logs -f mongo",
+    "db:shell": "docker compose exec mongo sh -c 'mongosh -u \"$MONGO_INITDB_ROOT_USERNAME\" -p \"$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin'",
+    "db:destroy": "docker compose down -v"
   },
   "private": true,
   "type": "module",

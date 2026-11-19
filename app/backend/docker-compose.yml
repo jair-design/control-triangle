@@ -1,0 +1,29 @@
+# MongoDB local para el desarrollo del microservicio.
+# Se gestiona con los scripts db:* del package.json (npm run db:up, db:down, ...).
+name: webi-todo
+
+services:
+  mongo:
+    image: mongo:8
+    container_name: webi-mongo
+    restart: unless-stopped
+    environment:
+      # Crea el usuario administrador la PRIMERA vez que se inicializa el volumen.
+      # Cambiarlas después no tiene efecto sobre un volumen ya creado (ver db:destroy).
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?Define MONGO_ROOT_USER en app/backend/.env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Define MONGO_ROOT_PASSWORD en app/backend/.env}
+    ports:
+      # Solo accesible desde esta máquina.
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      # ping no exige autenticación, así que no hace falta pasar credenciales aquí.
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  mongo-data:
